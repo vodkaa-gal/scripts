@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+show_colour() {
+    perl -e 'foreach $a(@ARGV){print "\e[48:2::".join(":",unpack("C*",pack("H*",$a)))."m \e[49m "};print "\n"' "$@"
+}
+
+colors_dark1=("bg#282828" "red#cc241d" "green#98971a" "yellow#d79921" "blue#458588" "purple#b16286" "aqua#689d6a" "gray#a89984" "orange#d65d0e")
+colors_dark2=("fg#ebdbb2" "red#fb4934" "green#b8bb26" "yellow#fabd2f" "blue#83a598" "purple#d3869b" "aqua#8ec07c" "gray#928374" "orange#fe8019")
+
+flats_dark1=("bg0_h#1d2021" "bg0#282828" "bg1#3c3836" "bg2#504945" "bg3#665c54" "bg4#7c6f64")
+flats_dark2=("bg0_s#32302f" "fg4#a89984" "fg2#d5c4a1" "fg1#ebdbb2" "fg0#fbf1c7")
+
+colour_table() {
+	cols=""
+	for var in "$@"
+	do
+		col=$(echo "$var" | awk '{split($0,a,"#"); print a[2]}')
+		name=$(echo "$var" | awk '{split($0,a,"#"); print a[1]}')
+		col_block=$(echo $(show_colour "$col"))
+		cols=$(echo "$cols$col_block$col_block#$col $name$col_block$col_block")
+	done
+	echo $cols
+}
+
+colour_table "${colors_dark1[@]}"
+echo ""
+colour_table "${colors_dark2[@]}"
+echo ""
+echo ""
+colour_table "${flats_dark1[@]}"
+colour_table "${flats_dark2[@]}"
+

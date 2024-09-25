@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+## UNFINISHED
+# bullshit magic ass theme changer for gtk3, gradience, and maybe qt someday
+# hoping to support many many many apps (vivaldi, nvim, etc.) eventually
+# might change to plugin like structure (apps have plugins, changetheme has one file)
+# set +x
+# trap read debug
+if [ ! -z "${XDG_CONFIG_DIR}" ]; then
+	conf_dir="$XDG_CONFIG_DIR/changetheme/";
+else
+	conf_dir="$HOME/.config/changetheme/";
+fi
+
+if [ ! -d ${conf_dir} ]; then
+	mkdir "${conf_dir}";
+fi
+
+function chgtheme_help {
+printf "◤◢◤ CHANGETHEME USAGE ◢◤◢
+changetheme (s|l|n|p|u|r) [PRESET_NAME] [GRADIENCE_THEME]
+
+s - save current theme as preset
+l - load preset
+n - next preset
+p - previous preset
+u - undo change (go back to the last unsaved theme)
+r - remove preset\n"
+}
+
+function get_theme {
+	gtk_theme="$(gsettings get org.gnome.desktop.interface gtk-theme)";
+	gtk4_theme=$1; # fuck you gradience why no get ability
+	gtk_mode="$(gsettings get org.gnome.desktop.interface color-scheme)";
+
+}
+
+function set_theme {
+	echo $gtk_theme
+	echo $gtk4_theme
+	echo $gtk_mode
+	gsettings set org.gnome.desktop.interface gtk-theme $gtk_theme;
+	gradience-cli apply -n "${gtk4_theme}"
+	gsettings set org.gnome.desktop.interface color-scheme $gtk_mode;
+}
+
+function save_preset {
+	preset_name=$1
+	if [ -f "${conf_dir}${present_name}" ]; then
+		printf "Err: Preset already exists.\n"
+		exit 2
+	fi
+	touch "${conf_dir}${preset_name}";
+	printf "${gtk_theme},${gtk4_theme},${gtk_mode}\n" > "${conf_dir}${preset_name}";
+}
+
+function load_preset {
+	preset_name=$1
+	if [ -f "${conf_dir}${present_name}" ]; then
+		printf "Err: Preset does not exist.\n"
+		exit 3
+	fi
+	preset_opts=$(cat ${conf_dir}${preset_name};)
+	echo $preset_opts;
+	gtk_theme=$(echo $preset_opts | awk -F , '{print $1}');
+	gtk4_theme=$(echo $preset_opts | awk -F , '{print $2}');
+	gtk_mode=$(echo $preset_opts | awk -F , '{print $3}');
+
+
+}
+
+case $1 in
+	s)
+		get_theme $3
+		save_preset $2
+		;;
+	l)
+		load_preset $2
+		set_theme
+		;;
+	r)
+
+		if [ -f "${conf_dir}${present_name}" ]; then
+			printf "Err: Preset does not exist.\n"
+			exit 3
+		fi
+		rm "${conf_dir}${2}"
+		;;
+	*)
+		chgtheme_help
+		printf "\nErr: Incorrect usage.\n"
+		exit 1
+		;;
+esac

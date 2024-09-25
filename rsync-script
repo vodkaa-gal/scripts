@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+rsync -a -f"- */" -f"+ *" ~/Pictures/wallpapers/ monarch@10.1.1.2:/store/pub/media/wallpapers/ 

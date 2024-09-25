@@ -1,0 +1,104 @@
+#!/usr/bin/env bash
+# mini swww wallpaper switcher with color support for waybar
+# patchnotes:
+# TODO: single letter files break wallpaper ordering (bug)
+#	spaces probably work now (please test)
+# Made by Vodkaa (github.com/vodkaa-gal)
+# wall_dir="$HOME/Pictures/wallpapers/"
+img_list="$(\ls -1p $wall_dir | grep -v / | xargs echo | sed 's/ /, /g')"
+current_img="$(swww query | awk -F 'image: ' '{print $2}' | sed 's/^.*\///' | tail -n 1)" 
+
+function chgwall_help {
+
+printf "◤◢◤ CHANGEWALL USAGE ◢◤◢
+changewall (i|n|p|s) [IMAGE_PATH]
+
+i - init
+n - next wallpaper
+p - previous wallpaper
+s - specify image\n"
+
+}
+
+function init {
+	xtrans="grow"
+	swww-daemon --format xrgb & disown
+	sleep 1
+	current_img="$(swww query | awk -F 'image: ' '{print $2}' | sed 's/^.*\///' | tail -n 1)"
+	img_path="$(echo $wall_dir $current_img| sed 's/ //g')"
+}
+
+function next_image {
+	xtrans="grow"
+	next_img="$(echo $img_list | sed "s/^.*$current_img,//" | awk -F"," '{print $1}')"
+	img_path="$(echo $wall_dir $next_img| sed 's/ //g')"
+}
+
+function prev_image {
+	xtrans="outer"
+	img_list="$(echo $img_list | awk 'BEGIN{FS=",[ ]*"; OFS=", "}
+	    {
+	        for (i=NF; i>0; i--) {
+	            printf "%s", $i;
+	            if (i>1) {
+ 	               printf "%s", OFS;
+ 	           }
+ 	       }
+ 	       printf "\n"
+	    }')"
+	next_img="$(echo $img_list | sed "s/^.*$current_img,//" | awk -F"," '{print $1}')"
+	img_path="$(echo $wall_dir $next_img| sed 's/ //g')"
+}
+
+function spec_image {
+	img_path=$1
+	if [ ! -f "$img_path" ]; then
+		echo "file not found"
+		exit 2
+	fi
+	xtrans="grow"
+}
+
+function set_wall {
+	colorz $img_path --no-preview | awk '{print "@define-color color"NR" "$1";"}' > $HOME/.config/waybar/walcolors.css
+
+		swww img $img_path \
+    --transition-bezier .43,1.19,1,.4 \
+    --transition-type $xtrans \
+    --transition-duration 0.7 \
+    --transition-fps 60 \
+    --invert-y \
+    --transition-pos "$( hyprctl cursorpos )"
+
+		pkill waybar
+		waybar & disown
+		wal -i $img_path -s -t -q
+		echo "done"
+}
+
+case $1 in
+	i)
+		init
+		set_wall
+		;;
+	h|-h|help|--help)
+		chgwall_help
+		;;
+	n)
+		next_image
+		set_wall
+		;;
+	p)
+		prev_image
+		set_wall
+		;;
+	s)
+		spec_image $2
+		set_wall
+		;;
+	*)
+		chgwall_help
+		printf "\nErr: Incorrect usage.\n"
+		exit 1
+		;;
+esac
