@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+# ex:
+# ./markdown_export <markdown_file> [output_name]
+# out: markdown 
+
+in_doc="$1"
+out_name="$2"
+
+if [ ! -f ${in_doc} ]; then exit 66; fi
+
+if [ -z ${2+x} ]; then
+	in_name=$(basename $in_doc);
+	out_name=$(echo "${in_name%.*}");
+fi
+
+
+pandoc --toc --standalone --mathjax -f markdown -t html "$in_doc" \
+		-o "$out_name".html;
+
+pandoc --pdf-engine=xelatex -f markdown -t pdf "$in_doc" -o "$out_name".pdf;
