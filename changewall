@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # mini swww wallpaper switcher with color support for waybar
 # Made by Vodkaa (github.com/vodkaa-gal)
-wall_dir=/home/aeon/Pictures/wallpapers
+wall_dir="$HOME/Pictures/wallpapers"
 wall_list=("$wall_dir"/*)
 
 function chgwall_help {
@@ -25,7 +25,7 @@ function init {
 function get_image {
 	current=$(swww query | awk -F 'image: ' '{print $2}')
 
-	if [ $order -eq 1 ]; then
+	if [ $order -eq 1 ]; then # reverse order if set to previous
 		wall_list=( $(printf '%s\n' "${wall_list[@]}" | tac) )
 	fi
 	
@@ -33,24 +33,26 @@ function get_image {
 	
 	for entry in "${wall_list[@]}" 
 	do
-		if [ $final == 1 ]
-		then
-			wall=$entry; break;
-		fi
+		if [ -f $entry ]; then # ignore directories
+			if [ $final == 1 ] # break if after current wallpaper
+			then
+				wall=$entry; break; 
+			fi
 	
-		if [ "$entry" == "$current" ]
-		then
-			final=1
+			if [ "$entry" == "$current" ]
+			then
+				final=1 # set pass checkpoint
+			fi
 		fi
 	done
 	
-	if [ ! -f "$wall" ]; then
+	if [ ! -f "$wall" ]; then # set to first file if next file does not exist
 		wall=$wall_list
 	fi
 }
 
 function set_wall {
-	if [ ! -f "$wall" ]; then
+	if [ ! -f "$wall" ]; then # check if wall exists
 		printf "No file specified. \n"
 		exit
 	fi
@@ -61,12 +63,12 @@ function set_wall {
 
 
 	swww img "$wall" \
-	# --transition-bezier .43,1.19,1,.4 \
-    	# --transition-type grow \
-    	# --transition-duration 0.3 \
-    	# --transition-fps 60 \
-    	# --invert-y \
-    	# --transition-pos "$( hyprctl cursorpos )"
+	--transition-bezier .43,1.19,1,.4 \
+    	--transition-type grow \
+    	--transition-duration 0.3 \
+    	--transition-fps 60 \
+    	--invert-y \
+    	--transition-pos "$( hyprctl cursorpos )"
 
 	pkill waybar
 	waybar & disown
