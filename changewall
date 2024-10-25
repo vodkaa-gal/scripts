@@ -20,10 +20,11 @@ function init {
 	xtrans="grow"
 	swww-daemon --format xrgb & disown
 	sleep 1
+	waybar & disown
 }
 
 function get_image {
-	current=$(swww query | awk -F 'image: ' '{print $2}')
+	current=$(swww query | awk -F 'image: ' '{print $2}' | tail -n 1)
 
 	if [ $order -eq 1 ]; then # reverse order if set to previous
 		wall_list=( $(printf '%s\n' "${wall_list[@]}" | tac) )
