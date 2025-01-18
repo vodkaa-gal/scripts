@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # mini swww wallpaper switcher with color support for waybar
-# Made by Vodkaa (github.com/vodkaa-gal)
+# made by vodkaa (github.com/vodkaa-gal)
 wall_dir="$HOME/Pictures/wallpapers"
 wall_list=("$wall_dir"/*)
 

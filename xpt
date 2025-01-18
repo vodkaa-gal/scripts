@@ -1,0 +1,52 @@
+#!/bin/bash
+# xpt: xbox power tool
+# gets input from xbox controller, then does something
+# wip, only lists button names or values for sticks
+# TODO:
+# - add config file in this form:
+# 	button=command
+# 	home=steam
+# - add config file in short kb form:
+# 	button=key
+# 	a=a
+
+evtest /dev/input/event21 | \
+while IFS=" ," read -r \
+ev_l ti_l ti ty_l tynum tyname code_l code codename val_l val; do
+# if [ "$val" = "1" ]; then
+#     echo "hello world"
+#     echo "im steven"
+#     echo ""
+#     echo "wack"
+# fi
+	case $code+$val in
+		314+1) echo "back"		;;
+		315+1) echo "start"		;;
+		316+1) echo "home"		;;
+		167+1) echo "capture"		;;
+		
+		304+1) echo "a"			;;
+		305+1) echo "b"			;;
+		307+1) echo "x"			;;
+		308+1) echo "y"			;;
+		
+		16+-1) echo "dpad left"		;;
+		16+1) echo "dpad right"		;;
+		17+-1) echo "dpad up"		;;
+		17+1) echo "dpad down"		;;
+		
+		310+1) echo "shoulder l"	;;
+		311+1) echo "shoulder r"	;;
+		2+*) echo "trig l $val"		;;
+		5+*) echo "trig r $val"		;;
+
+		317+1) echo "stick l press"	;;
+		0+*) echo "stick l horiz $val"	;;
+		1+*) echo "stick l vert $val"	;;
+
+		318+1) echo "stick r"		;;
+		3+*) echo "stick r horiz $val"	;;
+		4+*) echo "stick r vert $val"	;;
+	esac
+
+done
