@@ -58,10 +58,8 @@ function set_wall {
 		exit
 	fi
 
-	colorz "$wall" --no-preview | \
-	awk '{print "@define-color color"NR" "$1";"}' \
-	> $HOME/.config/waybar/walcolors.css
-
+	wallust run --backend kmeans "$wall"
+	pywalfox update
 
 	swww img "$wall" \
 	--transition-bezier .43,1.19,1,.4 \
