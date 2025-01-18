@@ -3,12 +3,14 @@
 # gets input from xbox controller, then does something
 # wip, only lists button names or values for sticks
 # TODO:
+# - add argument for device
 # - add config file in this form:
 # 	button=command
 # 	home=steam
 # - add config file in short kb form:
 # 	button=key
 # 	a=a
+# - add device config file option
 
 evtest /dev/input/event21 | \
 while IFS=" ," read -r \
