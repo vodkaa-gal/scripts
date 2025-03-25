@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# mini swww wallpaper switcher with color support for waybar
+# mini swww wallpaper switcher with color support for wallust
 # made by vodkaa (github.com/vodkaa-gal)
 wall_dir="$HOME/Pictures/wallpapers"
 wall_list=("$wall_dir"/*)
@@ -57,8 +57,8 @@ function set_wall {
 		printf "No file specified. \n"
 		exit
 	fi
-
-	wallust run --backend kmeans "$wall"
+	
+	wallust run "$wall"
 	pywalfox update
 
 	swww img "$wall" \

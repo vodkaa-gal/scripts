@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# wallust album cover colors
+# made by vodkaa (github.com/vodkaa-gal)
+cover="$HOME/.config/quodlibet/current.cover"
+player="quodlibet"
+
+function set_color {
+	if [ ! -f "$1" ]; then # check if cover was given
+		printf "\nErr: Incorrect usage.\n"
+		printf "File $cover does not exist. \n"
+		exit
+	fi
+	
+	wallust run "$1"
+	pywalfox update
+	pkill waybar
+	waybar & disown
+}
+
+playerctl --player="$player" metadata --follow | \
+while read -r line; do
+    if [[ $line == "$player xesam:title"* ]]; then
+        title=$(printf "$line\n" | cut -d' ' -f2-)
+        printf "$title\n"
+	set_color $cover
+    fi
+done
