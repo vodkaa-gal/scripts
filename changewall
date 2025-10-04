@@ -58,19 +58,18 @@ function set_wall {
 		exit
 	fi
 	
-	wallust run "$wall"
-	pywalfox update
-
 	swww img "$wall" \
-	--transition-bezier .43,1.19,1,.4 \
-    	--transition-type grow \
-    	--transition-duration 0.3 \
+	--transition-bezier .43,1.19,1,1 \
+    	--transition-type wave \
+    	--transition-duration 1 \
     	--transition-fps 60 \
     	--invert-y \
-    	--transition-pos "$( hyprctl cursorpos )"
-
-	pkill waybar
-	waybar & disown
+    	--transition-pos "0, 0"
+	
+	# wallust run "$wall" -s
+	# pywalfox update
+	# pkill waybar
+	# waybar & disown
 }
 
 case $1 in

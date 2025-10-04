@@ -1,0 +1,95 @@
+#!/bin/bash
+device="MPK mini 3"
+declare fifoFile=/tmp/controller_volume data2_ext sender_frequency receiver_frequency
+declare -i PID_checkVolume current_time last_time=0 mode
+
+trap "quit" SIGINT
+trap "quit" SIGQUIT
+
+quit ()
+   {
+   	rm $fifoFile
+	killall midivol
+   }
+   
+#--- checkVolume [receiver frequency FLOAT] [mode INT]
+#--- checks the volume values with overhanded frequency from FIFO file
+#--- mode INT ... mode evaluated as Bits, example mode = 3 ->  weights: Bit_2= 4, Bit_1= 2, Bit_0= 1 -> Bit_2: 0, Bit_1: 1, Bit_0: 1    
+#---              Bit 0 --> set volume only, if volume finished changing, and new volume is not equal old volume
+#---                        receiver frequency must be below aseqdump's sender frequency, if not -> would cause a volume change delay
+#---              Bit 1 --> set volume every period -> too high frequency would cause a volume change delay             
+#---              Bit 2 --> volume data includes sender frequency and echo sender frequency
+
+# get data from midi device
+getData() {
+aseqdump -p "$device" | \
+	while IFS=" ," read -r src ev1 ev2 ch label1 data1 label2 data2 rest; do
+	   if (( (mode & 4) > 0 )); then                                          # mode Bit_2= 1, calculate sender frequency
+	      current_time=$(($(date +%s%N)/1000000))
+	      sender_frequency=$(bc <<< "scale=3; print 1000/(${current_time}-${last_time})");
+	      last_time=$current_time
+	      data2_ext="${sender_frequency}:"
+	   fi
+	   if [[ "$ev1 $ev2 $data1" == "Control change 23" ]]; then
+	      echo -n "$data2_ext$data2 " > $fifoFile;                            #-- writes volume values to FIFO ->        "51 ", "52 ", "53 " 
+	   fi                                                                     #-- or with data2_ext, e.g. frequency 100  "100:51 ", "100:52 ", "100:53 "
+	done
+}
+
+checkVolume ()
+   {
+   local volumeSTR periodtime=$(bc <<< "scale=5; print 0, 1/$1") sender_frequency
+   local -i volume_set=-1000000 volume=-1000000 mode=$2 doAset
+
+   exec 12<$fifoFile   #-- open file descriptor 12
+   
+   while true; do
+      doAset=0; read -u 12 volumeSTR                                         #-- reads the volume values already written to FIFO <- "51 52 53 ", after this the FIFO is empty til aseqdump writes again
+	if [[ $volumeSTR == "" ]]; then                                        #-- FIFO was empty -> sender stopped writing or !!! frequency was too high and sender had no chance to set a new  value !!!
+         if (( (mode & 1) > 0 && volume != volume_set )); then doAset=1; fi  #-- mode Bit_0 = 1
+      else
+         volumeSTR=${volumeSTR:0}; volumeSTR=${volumeSTR##* }             #-- removes the last space "51 52 53" and then cuts from begin to the last space "53"
+         if (( (mode & 4) > 0 )); then
+            sender_frequency=${volumeSTR%%:*}; volume=${volumeSTR##*:}       #-- volumeSTR includes sender frequency "100:53" -> frequency 100, volume 53
+         else volume=${volumeSTR}                                            #-- volumeSTR does not include frequency "53"-> volume 53
+         fi
+         if (( (mode & 2) > 0 && volume != volume_set )); then doAset=1; fi  #-- mode Bit_1 = 1
+      fi
+      if ((doAset)); then
+         volume_set=$volume
+         if (( (mode & 4) >0 )); then echo -n "aseqdump frequency: $sender_frequency, "; fi  #-- mode Bit_2 = 1
+         echo "volume $volume set"
+	 pamixer --set-volume $((($volume * 100) / 127));
+      fi
+      sleep $periodtime
+   done
+   }
+
+mkfifo $fifoFile                              #-- makes the fifo
+receiver_frequency=${1:="1"}; mode=${2:="6"}  #-- standards: receiver frequency 2, mode 6 ( echo frequency, set every period)
+
+
+#-- checkVolume is started asynchronously with script parameters [receiver frequency FLOAT] [mode INT]
+checkVolume "$receiver_frequency" "$mode" &
+
+PID_checkVolume=$!                 #-- saves the PID of the checkVolume job
+data2_ext=""                       #-- data2 extension - for sending frequency with volume value
+
+# start data gathering
+getData &
+PID_getData=$!
+
+while true; do
+	# if device dne and process running
+	if (! aseqdump --list | grep "$device" && ps $PID_getData ); then
+		echo "no device"
+		kill $PID_getData;
+
+	# device exists and process not running
+	elif (aseqdump --list | grep "$device" && ! ps $PID_getData ); then
+		echo "device exists, process not running"
+		getData &
+		PID_getData=$!
+	fi
+	sleep 5;
+done

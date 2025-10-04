@@ -8,11 +8,10 @@ function set_color {
 	if [ ! -f "$1" ]; then # check if cover was given
 		printf "\nErr: Incorrect usage.\n"
 		printf "File $cover does not exist. \n"
-		exit
 	fi
 	
 	wallust run "$1"
-	pywalfox update
+	pywalfox update 
 	pkill waybar
 	waybar & disown
 }
@@ -22,6 +21,7 @@ while read -r line; do
     if [[ $line == "$player xesam:title"* ]]; then
         title=$(printf "$line\n" | cut -d' ' -f2-)
         printf "$title\n"
+	sleep 0.5
 	set_color $cover
     fi
 done
